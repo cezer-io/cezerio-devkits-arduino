@@ -3,14 +3,12 @@
 #pragma once
 
 #include "ZigbeeCore.h"
-#if SOC_IEEE802154_SUPPORTED
+#if SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
 
 #include <Arduino.h>
 
 /* Useful defines */
 #define ZB_ARRAY_LENTH(arr) (sizeof(arr) / sizeof(arr[0]))
-#define print_ieee_addr(addr) \
-  log_i("IEEE Address: %02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5], addr[6], addr[7])
 #define XYZ_TO_RGB(X, Y, Z, r, g, b)                                \
   {                                                                 \
     r = (float)(3.240479 * (X) - 1.537150 * (Y) - 0.498535 * (Z));  \
@@ -46,9 +44,10 @@ typedef struct zb_device_params_s {
 } zb_device_params_t;
 
 typedef enum {
-  SINGLE_COLOR = 0,
-  RGB = 1
-} zb_identify_led_type_t;
+  ZB_POWER_SOURCE_UNKNOWN = 0x00,
+  ZB_POWER_SOURCE_MAINS = 0x01,
+  ZB_POWER_SOURCE_BATTERY = 0x03,
+} zb_power_source_t;
 
 /* Zigbee End Device Class */
 class ZigbeeEP {
@@ -68,11 +67,13 @@ public:
   }
 
   void printBoundDevices();
+  void printBoundDevices(Print &print);
+
   std::list<zb_device_params_t *> getBoundDevices() const {
     return _bound_devices;
   }
 
-  static bool isBound() {
+  static bool bound() {
     return _is_bound;
   }
   static void allowMultipleBinding(bool bind) {
@@ -81,10 +82,13 @@ public:
 
   // Manufacturer name and model implemented
   void setManufacturerAndModel(const char *name, const char *model);
+  void setPowerSource(zb_power_source_t power_source, uint8_t percentage = 255);
+  void setBatteryPercentage(uint8_t percentage);
+  void reportBatteryPercentage();
 
   // Methods to read manufacturer and model name from selected endpoint and short address
-  char *readManufacturer(uint8_t endpoint, uint16_t short_addr);
-  char *readModel(uint8_t endpoint, uint16_t short_addr);
+  char *readManufacturer(uint8_t endpoint, uint16_t short_addr, esp_zb_ieee_addr_t ieee_addr);
+  char *readModel(uint8_t endpoint, uint16_t short_addr, esp_zb_ieee_addr_t ieee_addr);
 
   bool epAllowMultipleBinding() {
     return _allow_multiple_binding;
@@ -104,21 +108,26 @@ public:
   }
 
 private:
-  static bool _allow_multiple_binding;
   char *_read_manufacturer;
   char *_read_model;
   void (*_on_identify)(uint16_t time);
 
 protected:
-  static uint8_t _endpoint;
+  uint8_t _endpoint;
   esp_zb_ha_standard_devices_t _device_id;
   esp_zb_endpoint_config_t _ep_config;
   esp_zb_cluster_list_t *_cluster_list;
   static bool _is_bound;
+  static bool _allow_multiple_binding;
   std::list<zb_device_params_t *> _bound_devices;
   SemaphoreHandle_t lock;
+  zb_power_source_t _power_source;
 
+  void addBoundDevice(zb_device_params_t *device) {
+    _bound_devices.push_back(device);
+    _is_bound = true;
+  }
   friend class ZigbeeCore;
 };
 
-#endif  //SOC_IEEE802154_SUPPORTED
+#endif  //SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED

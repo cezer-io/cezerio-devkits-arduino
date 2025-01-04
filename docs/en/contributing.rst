@@ -172,12 +172,13 @@ And in the ``README.md`` file:
 By default, the CI system will use the FQBNs specified in the ``.github/scripts/sketch_utils.sh`` file to compile the sketches.
 Currently, the default FQBNs are:
 
-* ``espressif:esp32:esp32:PSRAM=enabled,FlashMode=dio``
-* ``espressif:esp32:esp32s2:PSRAM=enabled,FlashMode=dio``
-* ``espressif:esp32:esp32s3:PSRAM=opi,USBMode=default,FlashMode=dio``
-* ``espressif:esp32:esp32c3:FlashMode=dio``
-* ``espressif:esp32:esp32c6:FlashMode=dio``
-* ``espressif:esp32:esp32h2:FlashMode=dio``
+* ``espressif:esp32:esp32:PSRAM=enabled``
+* ``espressif:esp32:esp32s2:PSRAM=enabled``
+* ``espressif:esp32:esp32s3:PSRAM=opi,USBMode=default``
+* ``espressif:esp32:esp32c3``
+* ``espressif:esp32:esp32c6``
+* ``espressif:esp32:esp32h2``
+* ``espressif:esp32:esp32p4:USBMode=default``
 
 There are two ways to alter the FQBNs used to compile the sketches: by using the ``fqbn`` or ``fqbn_append`` fields in the ``ci.json`` file.
 
@@ -408,7 +409,9 @@ CI JSON File
 The ``ci.json`` file is used to specify how the test suite and sketches will handled by the CI system. It can contain the following fields:
 
 * ``requires``: A list of configurations in ``sdkconfig`` that are required to run the test suite. The test suite will only run on the targets
-  that have the required configurations. By default, no configurations are required.
+  that have **ALL** the required configurations. By default, no configurations are required.
+* ``requires_any``: A list of configurations in ``sdkconfig`` that are required to run the test suite. The test suite will only run on the targets
+  that have **ANY** of the required configurations. By default, no configurations are required.
 * ``targets``: A dictionary that specifies the targets for which the tests will be run. The key is the target name and the value is a boolean
   that specifies if the test should be run for that target. By default, all targets are enabled as long as they have the required configurations
   specified in the ``requires`` field. This field is also valid for examples.
@@ -437,6 +440,16 @@ Code Style Checks
 For checking the code style and other code quality checks, we use pre-commit hooks.
 These hooks will be automatically run by the CI when a Pull Request is marked as ``Status: Pending Merge``.
 You can check which hooks are being run in the ``.pre-commit-config.yaml`` file.
+
+Currently, we have hooks for the following tasks:
+
+* Formatters for C, C++, Python, Bash, JSON, Markdown and ReStructuredText files;
+* Linters for Python, Bash and prose (spoken language);
+* Checking for spelling errors in the code and documentation;
+* Removing trailing whitespaces and tabs in the code;
+* Checking for the presence of private keys and other sensitive information in the code;
+* Fixing the line endings and end of files (EOF) in the code;
+* And more.
 
 You can read more about the pre-commit hooks in the `pre-commit documentation <https://pre-commit.com/>`_.
 
