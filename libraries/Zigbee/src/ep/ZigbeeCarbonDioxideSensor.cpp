@@ -1,5 +1,5 @@
 #include "ZigbeeCarbonDioxideSensor.h"
-#if SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#if CONFIG_ZB_ENABLED
 
 esp_zb_cluster_list_t *zigbee_carbon_dioxide_sensor_clusters_create(zigbee_carbon_dioxide_sensor_cfg_t *carbon_dioxide_sensor) {
   esp_zb_basic_cluster_cfg_t *basic_cfg = carbon_dioxide_sensor ? &(carbon_dioxide_sensor->basic_cfg) : NULL;
@@ -37,7 +37,9 @@ void ZigbeeCarbonDioxideSensor::setTolerance(float tolerance) {
   float zb_tolerance = tolerance / 1000000.0f;
   esp_zb_attribute_list_t *carbon_dioxide_measure_cluster =
     esp_zb_cluster_list_get_cluster(_cluster_list, ESP_ZB_ZCL_CLUSTER_ID_CARBON_DIOXIDE_MEASUREMENT, ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
-  esp_zb_temperature_meas_cluster_add_attr(carbon_dioxide_measure_cluster, ESP_ZB_ZCL_ATTR_CARBON_DIOXIDE_MEASUREMENT_TOLERANCE_ID, (void *)&zb_tolerance);
+  esp_zb_carbon_dioxide_measurement_cluster_add_attr(
+    carbon_dioxide_measure_cluster, ESP_ZB_ZCL_ATTR_CARBON_DIOXIDE_MEASUREMENT_TOLERANCE_ID, (void *)&zb_tolerance
+  );
 }
 
 void ZigbeeCarbonDioxideSensor::setReporting(uint16_t min_interval, uint16_t max_interval, uint16_t delta) {
@@ -90,4 +92,4 @@ void ZigbeeCarbonDioxideSensor::report() {
   log_v("Carbon dioxide report sent");
 }
 
-#endif  //SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#endif  // CONFIG_ZB_ENABLED
