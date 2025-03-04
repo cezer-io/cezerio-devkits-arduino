@@ -12,7 +12,7 @@
         {
           "name": "cezerio",
           "architecture": "esp32",
-          "version": "1.1.0",
+          "version": "1.0.0",
           "category": "Contributed",
           "url": "https://github.com/cezer-io/cezerio-devkits-arduino/releases/download/1.0.0/cezerio-1.0.0.zip",
           "archiveFileName": "esp32-3.2.0-RC1.zip",
