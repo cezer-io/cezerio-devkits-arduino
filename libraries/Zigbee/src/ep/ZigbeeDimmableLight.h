@@ -4,7 +4,7 @@
 
 #include "soc/soc_caps.h"
 #include "sdkconfig.h"
-#if SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#if CONFIG_ZB_ENABLED
 
 #include "ZigbeeEP.h"
 #include "ha/esp_zigbee_ha_standard.h"
@@ -67,7 +67,7 @@ typedef struct zigbee_dimmable_light_cfg_s {
 class ZigbeeDimmableLight : public ZigbeeEP {
 public:
   ZigbeeDimmableLight(uint8_t endpoint);
-  ~ZigbeeDimmableLight();
+  ~ZigbeeDimmableLight() {}
 
   void onLightChange(void (*callback)(bool, uint8_t)) {
     _on_light_change = callback;

@@ -4,7 +4,7 @@
 
 #include "soc/soc_caps.h"
 #include "sdkconfig.h"
-#if SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#if CONFIG_ZB_ENABLED
 
 #include "ZigbeeEP.h"
 #include "ha/esp_zigbee_ha_standard.h"
@@ -39,7 +39,7 @@ typedef struct zigbee_occupancy_sensor_cfg_s {
 class ZigbeeOccupancySensor : public ZigbeeEP {
 public:
   ZigbeeOccupancySensor(uint8_t endpoint);
-  ~ZigbeeOccupancySensor();
+  ~ZigbeeOccupancySensor() {}
 
   // Set the occupancy value. True for occupied, false for unoccupied
   void setOccupancy(bool occupied);
@@ -51,4 +51,4 @@ public:
   void report();
 };
 
-#endif  //SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#endif  // CONFIG_ZB_ENABLED

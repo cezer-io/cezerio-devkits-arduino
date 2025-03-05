@@ -6,7 +6,7 @@
 #   idf.py build
 
 set(min_supported_idf_version "5.3.0")
-set(max_supported_idf_version "5.3.99")
+set(max_supported_idf_version "5.4.99")
 set(idf_version "${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}.${IDF_VERSION_PATCH}")
 
 if ("${idf_version}" AND NOT "$ENV{ARDUINO_SKIP_IDF_VERSION_CHECK}")
@@ -33,6 +33,7 @@ set(CORE_SRCS
   cores/esp32/esp32-hal-dac.c
   cores/esp32/esp32-hal-gpio.c
   cores/esp32/esp32-hal-i2c.c
+  cores/esp32/esp32-hal-i2c-ng.c
   cores/esp32/esp32-hal-i2c-slave.c
   cores/esp32/esp32-hal-ledc.c
   cores/esp32/esp32-hal-matrix.c
@@ -181,6 +182,7 @@ set(ARDUINO_LIBRARY_Matter_SRCS
   libraries/Matter/src/MatterEndpoints/MatterPressureSensor.cpp
   libraries/Matter/src/MatterEndpoints/MatterOccupancySensor.cpp
   libraries/Matter/src/MatterEndpoints/MatterOnOffPlugin.cpp
+  libraries/Matter/src/MatterEndpoints/MatterThermostat.cpp
   libraries/Matter/src/Matter.cpp)
 
 set(ARDUINO_LIBRARY_PPP_SRCS
@@ -242,7 +244,11 @@ set(ARDUINO_LIBRARY_USB_SRCS
 set(ARDUINO_LIBRARY_WebServer_SRCS
   libraries/WebServer/src/WebServer.cpp
   libraries/WebServer/src/Parsing.cpp
-  libraries/WebServer/src/detail/mimetable.cpp)
+  libraries/WebServer/src/detail/mimetable.cpp
+  libraries/WebServer/src/middleware/MiddlewareChain.cpp
+  libraries/WebServer/src/middleware/AuthenticationMiddleware.cpp
+  libraries/WebServer/src/middleware/CorsMiddleware.cpp
+  libraries/WebServer/src/middleware/LoggingMiddleware.cpp)
 
 set(ARDUINO_LIBRARY_NetworkClientSecure_SRCS
   libraries/NetworkClientSecure/src/ssl_client.cpp
@@ -285,6 +291,13 @@ set(ARDUINO_LIBRARY_Zigbee_SRCS
   libraries/Zigbee/src/ep/ZigbeePressureSensor.cpp
   libraries/Zigbee/src/ep/ZigbeeOccupancySensor.cpp
   libraries/Zigbee/src/ep/ZigbeeCarbonDioxideSensor.cpp
+  libraries/Zigbee/src/ep/ZigbeeContactSwitch.cpp
+  libraries/Zigbee/src/ep/ZigbeeDoorWindowHandle.cpp
+  libraries/Zigbee/src/ep/ZigbeeWindowCovering.cpp
+  libraries/Zigbee/src/ep/ZigbeeVibrationSensor.cpp
+  libraries/Zigbee/src/ep/ZigbeeAnalog.cpp
+  libraries/Zigbee/src/ep/ZigbeeRangeExtender.cpp
+  libraries/Zigbee/src/ep/ZigbeeGateway.cpp
   )
 
 set(ARDUINO_LIBRARY_BLE_SRCS

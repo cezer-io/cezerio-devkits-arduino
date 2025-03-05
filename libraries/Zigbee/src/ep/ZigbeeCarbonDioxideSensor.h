@@ -4,7 +4,7 @@
 
 #include "soc/soc_caps.h"
 #include "sdkconfig.h"
-#if SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#if CONFIG_ZB_ENABLED
 
 #include "ZigbeeEP.h"
 #include "ha/esp_zigbee_ha_standard.h"
@@ -39,7 +39,7 @@ typedef struct zigbee_carbon_dioxide_sensor_cfg_s {
 class ZigbeeCarbonDioxideSensor : public ZigbeeEP {
 public:
   ZigbeeCarbonDioxideSensor(uint8_t endpoint);
-  ~ZigbeeCarbonDioxideSensor();
+  ~ZigbeeCarbonDioxideSensor() {}
 
   // Set the carbon dioxide value in ppm
   void setCarbonDioxide(float carbon_dioxide);
@@ -58,4 +58,4 @@ public:
   void report();
 };
 
-#endif  //SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#endif  // CONFIG_ZB_ENABLED

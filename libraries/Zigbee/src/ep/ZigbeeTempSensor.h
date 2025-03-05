@@ -4,7 +4,7 @@
 
 #include "soc/soc_caps.h"
 #include "sdkconfig.h"
-#if SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#if CONFIG_ZB_ENABLED
 
 #include "ZigbeeEP.h"
 #include "ha/esp_zigbee_ha_standard.h"
@@ -12,7 +12,7 @@
 class ZigbeeTempSensor : public ZigbeeEP {
 public:
   ZigbeeTempSensor(uint8_t endpoint);
-  ~ZigbeeTempSensor();
+  ~ZigbeeTempSensor() {}
 
   // Set the temperature value in 0,01°C
   void setTemperature(float value);
@@ -48,4 +48,4 @@ private:
   bool _humidity_sensor;
 };
 
-#endif  //SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#endif  // CONFIG_ZB_ENABLED

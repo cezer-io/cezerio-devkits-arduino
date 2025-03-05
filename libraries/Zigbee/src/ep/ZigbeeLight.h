@@ -4,7 +4,7 @@
 
 #include "soc/soc_caps.h"
 #include "sdkconfig.h"
-#if SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#if CONFIG_ZB_ENABLED
 
 #include "ZigbeeEP.h"
 #include "ha/esp_zigbee_ha_standard.h"
@@ -12,7 +12,7 @@
 class ZigbeeLight : public ZigbeeEP {
 public:
   ZigbeeLight(uint8_t endpoint);
-  ~ZigbeeLight();
+  ~ZigbeeLight() {}
 
   // Use to set a cb function to be called on light change
   void onLightChange(void (*callback)(bool)) {
@@ -38,4 +38,4 @@ private:
   bool _current_state;
 };
 
-#endif  //SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#endif  // CONFIG_ZB_ENABLED

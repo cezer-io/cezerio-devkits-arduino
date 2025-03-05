@@ -1,5 +1,5 @@
 #include "ZigbeeOccupancySensor.h"
-#if SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#if CONFIG_ZB_ENABLED
 
 esp_zb_cluster_list_t *zigbee_occupancy_sensor_clusters_create(zigbee_occupancy_sensor_cfg_t *occupancy_sensor) {
   esp_zb_basic_cluster_cfg_t *basic_cfg = occupancy_sensor ? &(occupancy_sensor->basic_cfg) : NULL;
@@ -9,7 +9,6 @@ esp_zb_cluster_list_t *zigbee_occupancy_sensor_clusters_create(zigbee_occupancy_
   esp_zb_cluster_list_add_basic_cluster(cluster_list, esp_zb_basic_cluster_create(basic_cfg), ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
   esp_zb_cluster_list_add_identify_cluster(cluster_list, esp_zb_identify_cluster_create(identify_cfg), ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
   esp_zb_cluster_list_add_occupancy_sensing_cluster(cluster_list, esp_zb_occupancy_sensing_cluster_create(occupancy_meas_cfg), ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
-  esp_zb_cluster_list_add_identify_cluster(cluster_list, esp_zb_zcl_attr_list_create(ESP_ZB_ZCL_CLUSTER_ID_IDENTIFY), ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
   return cluster_list;
 }
 
@@ -57,4 +56,4 @@ void ZigbeeOccupancySensor::report() {
   log_v("Occupancy report sent");
 }
 
-#endif  //SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#endif  // CONFIG_ZB_ENABLED

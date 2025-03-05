@@ -4,7 +4,7 @@
 
 #include "soc/soc_caps.h"
 #include "sdkconfig.h"
-#if SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#if CONFIG_ZB_ENABLED
 
 #include "ZigbeeEP.h"
 #include "ha/esp_zigbee_ha_standard.h"
@@ -39,7 +39,7 @@ typedef struct zigbee_pressure_sensor_cfg_s {
 class ZigbeePressureSensor : public ZigbeeEP {
 public:
   ZigbeePressureSensor(uint8_t endpoint);
-  ~ZigbeePressureSensor();
+  ~ZigbeePressureSensor() {}
 
   // Set the pressure value in 1 hPa
   void setPressure(int16_t value);
@@ -57,4 +57,4 @@ public:
   void report();
 };
 
-#endif  //SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#endif  // CONFIG_ZB_ENABLED

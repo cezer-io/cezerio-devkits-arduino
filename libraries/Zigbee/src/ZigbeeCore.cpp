@@ -1,7 +1,7 @@
 /* Zigbee Core Functions */
 
 #include "ZigbeeCore.h"
-#if SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#if CONFIG_ZB_ENABLED
 
 #include "ZigbeeHandlers.cpp"
 #include "Arduino.h"
@@ -29,7 +29,6 @@ ZigbeeCore::ZigbeeCore() {
     }
   }
 }
-ZigbeeCore::~ZigbeeCore() {}
 
 //forward declaration
 static esp_err_t zb_action_handler(esp_zb_core_action_callback_id_t callback_id, const void *message);
@@ -88,7 +87,11 @@ void ZigbeeCore::addEndpoint(ZigbeeEP *ep) {
     return;
   }
 
-  esp_zb_ep_list_add_ep(_zb_ep_list, ep->_cluster_list, ep->_ep_config);
+  if (ep->_device_id == ESP_ZB_HA_HOME_GATEWAY_DEVICE_ID) {
+    esp_zb_ep_list_add_gateway_ep(_zb_ep_list, ep->_cluster_list, ep->_ep_config);
+  } else {
+    esp_zb_ep_list_add_ep(_zb_ep_list, ep->_cluster_list, ep->_ep_config);
+  }
 }
 
 static void esp_zb_task(void *pvParameters) {
@@ -157,7 +160,7 @@ bool ZigbeeCore::zigbeeInit(esp_zb_cfg_t *zb_cfg, bool erase_nvs) {
   }
 
   // Create Zigbee task and start Zigbee stack
-  xTaskCreate(esp_zb_task, "Zigbee_main", 4096, NULL, 5, NULL);
+  xTaskCreate(esp_zb_task, "Zigbee_main", 8192, NULL, 5, NULL);
 
   return true;
 }
@@ -314,7 +317,20 @@ void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_struct) {
         // for each endpoint in the list call the findEndpoint function if not bounded or allowed to bind multiple devices
         for (std::list<ZigbeeEP *>::iterator it = Zigbee.ep_objects.begin(); it != Zigbee.ep_objects.end(); ++it) {
           if (!(*it)->bound() || (*it)->epAllowMultipleBinding()) {
-            (*it)->findEndpoint(&cmd_req);
+            // Check if the device is already bound
+            bool found = false;
+            // Get the list of devices bound to the EP
+            std::list<zb_device_params_t *> bound_devices = (*it)->getBoundDevices();
+            for (std::list<zb_device_params_t *>::iterator device = bound_devices.begin(); device != bound_devices.end(); ++device) {
+              if (((*device)->short_addr == dev_annce_params->device_short_addr) || (memcmp((*device)->ieee_addr, dev_annce_params->ieee_addr, 8) == 0)) {
+                found = true;
+                log_d("Device already bound to endpoint %d", (*it)->getEndpoint());
+                break;
+              }
+            }
+            if (!found) {
+              (*it)->findEndpoint(&cmd_req);
+            }
           }
         }
       }
@@ -514,4 +530,4 @@ const char *ZigbeeCore::getDeviceTypeString(esp_zb_ha_standard_devices_t deviceI
 
 ZigbeeCore Zigbee = ZigbeeCore();
 
-#endif  //SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#endif  // CONFIG_ZB_ENABLED

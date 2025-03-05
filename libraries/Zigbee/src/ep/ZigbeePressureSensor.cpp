@@ -1,5 +1,5 @@
 #include "ZigbeePressureSensor.h"
-#if SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#if CONFIG_ZB_ENABLED
 
 esp_zb_cluster_list_t *zigbee_pressure_sensor_clusters_create(zigbee_pressure_sensor_cfg_t *pressure_sensor) {
   esp_zb_basic_cluster_cfg_t *basic_cfg = pressure_sensor ? &(pressure_sensor->basic_cfg) : NULL;
@@ -9,7 +9,6 @@ esp_zb_cluster_list_t *zigbee_pressure_sensor_clusters_create(zigbee_pressure_se
   esp_zb_cluster_list_add_basic_cluster(cluster_list, esp_zb_basic_cluster_create(basic_cfg), ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
   esp_zb_cluster_list_add_identify_cluster(cluster_list, esp_zb_identify_cluster_create(identify_cfg), ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
   esp_zb_cluster_list_add_pressure_meas_cluster(cluster_list, esp_zb_pressure_meas_cluster_create(pressure_meas_cfg), ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
-  esp_zb_cluster_list_add_identify_cluster(cluster_list, esp_zb_zcl_attr_list_create(ESP_ZB_ZCL_CLUSTER_ID_IDENTIFY), ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
   return cluster_list;
 }
 
@@ -34,38 +33,24 @@ void ZigbeePressureSensor::setMinMaxValue(int16_t min, int16_t max) {
 void ZigbeePressureSensor::setTolerance(uint16_t tolerance) {
   esp_zb_attribute_list_t *pressure_measure_cluster =
     esp_zb_cluster_list_get_cluster(_cluster_list, ESP_ZB_ZCL_CLUSTER_ID_PRESSURE_MEASUREMENT, ESP_ZB_ZCL_CLUSTER_SERVER_ROLE);
-  esp_zb_temperature_meas_cluster_add_attr(pressure_measure_cluster, ESP_ZB_ZCL_ATTR_PRESSURE_MEASUREMENT_TOLERANCE_ID, (void *)&tolerance);
+  esp_zb_pressure_meas_cluster_add_attr(pressure_measure_cluster, ESP_ZB_ZCL_ATTR_PRESSURE_MEASUREMENT_TOLERANCE_ID, (void *)&tolerance);
 }
 
 void ZigbeePressureSensor::setReporting(uint16_t min_interval, uint16_t max_interval, uint16_t delta) {
-  // clang-format off
-  esp_zb_zcl_reporting_info_t reporting_info = {
-    .direction = ESP_ZB_ZCL_CMD_DIRECTION_TO_SRV,
-    .ep = _endpoint,
-    .cluster_id = ESP_ZB_ZCL_CLUSTER_ID_PRESSURE_MEASUREMENT,
-    .cluster_role = ESP_ZB_ZCL_CLUSTER_SERVER_ROLE,
-    .attr_id = ESP_ZB_ZCL_ATTR_PRESSURE_MEASUREMENT_VALUE_ID,
-    .u =
-      {
-        .send_info =
-          {
-            .min_interval = min_interval,
-            .max_interval = max_interval,
-            .delta =
-              {
-                .u16 = delta, // x hPa
-              },
-            .def_min_interval = min_interval,
-            .def_max_interval = max_interval,
-          },
-      },
-    .dst =
-      {
-        .profile_id = ESP_ZB_AF_HA_PROFILE_ID,
-      },
-    .manuf_code = ESP_ZB_ZCL_ATTR_NON_MANUFACTURER_SPECIFIC,
-  };
-  // clang-format on
+  esp_zb_zcl_reporting_info_t reporting_info;
+  memset(&reporting_info, 0, sizeof(esp_zb_zcl_reporting_info_t));
+  reporting_info.direction = ESP_ZB_ZCL_CMD_DIRECTION_TO_SRV;
+  reporting_info.ep = _endpoint;
+  reporting_info.cluster_id = ESP_ZB_ZCL_CLUSTER_ID_PRESSURE_MEASUREMENT;
+  reporting_info.cluster_role = ESP_ZB_ZCL_CLUSTER_SERVER_ROLE;
+  reporting_info.attr_id = ESP_ZB_ZCL_ATTR_PRESSURE_MEASUREMENT_VALUE_ID;
+  reporting_info.u.send_info.min_interval = min_interval;
+  reporting_info.u.send_info.max_interval = max_interval;
+  reporting_info.u.send_info.def_min_interval = min_interval;
+  reporting_info.u.send_info.def_max_interval = max_interval;
+  reporting_info.u.send_info.delta.u16 = delta;  // x hPa
+  reporting_info.dst.profile_id = ESP_ZB_AF_HA_PROFILE_ID;
+  reporting_info.manuf_code = ESP_ZB_ZCL_ATTR_NON_MANUFACTURER_SPECIFIC;
   esp_zb_lock_acquire(portMAX_DELAY);
   esp_zb_zcl_update_reporting_info(&reporting_info);
   esp_zb_lock_release();
@@ -73,7 +58,7 @@ void ZigbeePressureSensor::setReporting(uint16_t min_interval, uint16_t max_inte
 
 void ZigbeePressureSensor::setPressure(int16_t pressure) {
   log_v("Updating pressure sensor value...");
-  /* Update temperature sensor measured value */
+  /* Update pressure sensor measured value */
   log_d("Setting pressure to %d hPa", pressure);
   esp_zb_lock_acquire(portMAX_DELAY);
   esp_zb_zcl_set_attribute_val(
@@ -97,4 +82,4 @@ void ZigbeePressureSensor::report() {
   log_v("Pressure report sent");
 }
 
-#endif  //SOC_IEEE802154_SUPPORTED && CONFIG_ZB_ENABLED
+#endif  // CONFIG_ZB_ENABLED
