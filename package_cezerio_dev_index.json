@@ -2,7 +2,7 @@
   "packages": [
     {
       "name": "cezerio",
-      "maintainer": "RFtek Electronics",
+      "maintainer": "cezerio",
       "websiteURL": "https://github.com/cezer-io/cezerio-devkits-arduino",
       "email": "hello@cezerio.com",
       "help": {
