@@ -10,9 +10,8 @@
  */
 
 #include "soc/soc_caps.h"
-#if SOC_BLE_SUPPORTED
-
 #include "sdkconfig.h"
+#if defined(SOC_BLE_SUPPORTED) || defined(CONFIG_ESP_HOSTED_ENABLE_BT_NIMBLE)
 #if defined(CONFIG_BLUEDROID_ENABLED) || defined(CONFIG_NIMBLE_ENABLED)
 
 /***************************************************************************
@@ -124,7 +123,7 @@ void BLECharacteristic::addDescriptor(BLEDescriptor *pDescriptor) {
  * @param [in] descriptorUUID The UUID of the descriptor that we wish to retrieve.
  * @return The BLE Descriptor.  If no such descriptor is associated with the characteristic, nullptr is returned.
  */
-BLEDescriptor *BLECharacteristic::getDescriptorByUUID(const char *descriptorUUID) {
+BLEDescriptor *BLECharacteristic::getDescriptorByUUID(const char *descriptorUUID) const {
   return m_descriptorMap.getByUUID(BLEUUID(descriptorUUID));
 }  // getDescriptorByUUID
 
@@ -133,7 +132,7 @@ BLEDescriptor *BLECharacteristic::getDescriptorByUUID(const char *descriptorUUID
  * @param [in] descriptorUUID The UUID of the descriptor that we wish to retrieve.
  * @return The BLE Descriptor.  If no such descriptor is associated with the characteristic, nullptr is returned.
  */
-BLEDescriptor *BLECharacteristic::getDescriptorByUUID(BLEUUID descriptorUUID) {
+BLEDescriptor *BLECharacteristic::getDescriptorByUUID(BLEUUID descriptorUUID) const {
   return m_descriptorMap.getByUUID(descriptorUUID);
 }  // getDescriptorByUUID
 
@@ -141,7 +140,7 @@ BLEDescriptor *BLECharacteristic::getDescriptorByUUID(BLEUUID descriptorUUID) {
  * @brief Get the handle of the characteristic.
  * @return The handle of the characteristic.
  */
-uint16_t BLECharacteristic::getHandle() {
+uint16_t BLECharacteristic::getHandle() const {
   return m_handle;
 }  // getHandle
 
@@ -151,14 +150,14 @@ void BLECharacteristic::setAccessPermissions(uint16_t perm) {
 #endif
 }
 
-esp_gatt_char_prop_t BLECharacteristic::getProperties() {
+esp_gatt_char_prop_t BLECharacteristic::getProperties() const {
   return m_properties;
 }  // getProperties
 
 /**
  * @brief Get the service associated with this characteristic.
  */
-BLEService *BLECharacteristic::getService() {
+BLEService *BLECharacteristic::getService() const {
   return m_pService;
 }  // getService
 
@@ -166,7 +165,7 @@ BLEService *BLECharacteristic::getService() {
  * @brief Get the UUID of the characteristic.
  * @return The UUID of the characteristic.
  */
-BLEUUID BLECharacteristic::getUUID() {
+BLEUUID BLECharacteristic::getUUID() const {
   return m_bleUUID;
 }  // getUUID
 
@@ -174,7 +173,7 @@ BLEUUID BLECharacteristic::getUUID() {
  * @brief Retrieve the current value of the characteristic.
  * @return A pointer to storage containing the current characteristic value.
  */
-String BLECharacteristic::getValue() {
+String BLECharacteristic::getValue() const {
   return m_value.getValue();
 }  // getValue
 
@@ -190,7 +189,7 @@ uint8_t *BLECharacteristic::getData() {
  * @brief Retrieve the current length of the data of the characteristic.
  * @return Amount of databytes of the characteristic.
  */
-size_t BLECharacteristic::getLength() {
+size_t BLECharacteristic::getLength() const {
   return m_value.getLength();
 }  // getLength
 
@@ -425,7 +424,7 @@ void BLECharacteristic::setWriteProperty(bool value) {
  * @brief Return a string representation of the characteristic.
  * @return A string representation of the characteristic.
  */
-String BLECharacteristic::toString() {
+String BLECharacteristic::toString() const {
   String res = "UUID: " + m_bleUUID.toString() + ", handle : 0x";
   char hex[5];
   snprintf(hex, sizeof(hex), "%04x", m_handle);
@@ -452,7 +451,7 @@ String BLECharacteristic::toString() {
   return res;
 }  // toString
 
-BLECharacteristicCallbacks::~BLECharacteristicCallbacks() {}
+BLECharacteristicCallbacks::~BLECharacteristicCallbacks() = default;
 
 // Common callbacks
 void BLECharacteristicCallbacks::onRead(BLECharacteristic *pCharacteristic) {
@@ -923,7 +922,6 @@ int BLECharacteristic::handleGATTServerEvent(uint16_t conn_handle, uint16_t attr
         if (ctxt->om->om_pkthdr_len > 8) {
           rc = ble_gap_conn_find(conn_handle, &desc);
           assert(rc == 0);
-          pCharacteristic->m_pCallbacks->onRead(pCharacteristic);
           pCharacteristic->m_pCallbacks->onRead(pCharacteristic, &desc);
         }
 
@@ -957,7 +955,6 @@ int BLECharacteristic::handleGATTServerEvent(uint16_t conn_handle, uint16_t attr
         rc = ble_gap_conn_find(conn_handle, &desc);
         assert(rc == 0);
         pCharacteristic->setValue(buf, len);
-        pCharacteristic->m_pCallbacks->onWrite(pCharacteristic);
         pCharacteristic->m_pCallbacks->onWrite(pCharacteristic, &desc);
 
         return 0;
@@ -1172,4 +1169,4 @@ void BLECharacteristicCallbacks::onSubscribe(BLECharacteristic *pCharacteristic,
 #endif /* CONFIG_NIMBLE_ENABLED */
 
 #endif /* CONFIG_BLUEDROID_ENABLED || CONFIG_NIMBLE_ENABLED */
-#endif /* SOC_BLE_SUPPORTED */
+#endif /* SOC_BLE_SUPPORTED || CONFIG_ESP_HOSTED_ENABLE_BT_NIMBLE */

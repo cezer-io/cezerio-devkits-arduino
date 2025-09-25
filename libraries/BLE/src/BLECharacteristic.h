@@ -11,10 +11,10 @@
 
 #ifndef COMPONENTS_CPP_UTILS_BLECHARACTERISTIC_H_
 #define COMPONENTS_CPP_UTILS_BLECHARACTERISTIC_H_
-#include "soc/soc_caps.h"
-#if SOC_BLE_SUPPORTED
 
+#include "soc/soc_caps.h"
 #include "sdkconfig.h"
+#if defined(SOC_BLE_SUPPORTED) || defined(CONFIG_ESP_HOSTED_ENABLE_BT_NIMBLE)
 #if defined(CONFIG_BLUEDROID_ENABLED) || defined(CONFIG_NIMBLE_ENABLED)
 
 /***************************************************************************
@@ -85,13 +85,13 @@ public:
   void setByUUID(const char *uuid, BLEDescriptor *pDescriptor);
   void setByUUID(BLEUUID uuid, BLEDescriptor *pDescriptor);
   void setByHandle(uint16_t handle, BLEDescriptor *pDescriptor);
-  BLEDescriptor *getByUUID(const char *uuid);
-  BLEDescriptor *getByUUID(BLEUUID uuid);
-  BLEDescriptor *getByHandle(uint16_t handle);
-  String toString();
+  BLEDescriptor *getByUUID(const char *uuid) const;
+  BLEDescriptor *getByUUID(BLEUUID uuid) const;
+  BLEDescriptor *getByHandle(uint16_t handle) const;
+  String toString() const;
   BLEDescriptor *getFirst();
   BLEDescriptor *getNext();
-  int getRegisteredDescriptorCount();
+  int getRegisteredDescriptorCount() const;
   void removeDescriptor(BLEDescriptor *pDescriptor);
 
   /***************************************************************************
@@ -181,12 +181,12 @@ public:
   virtual ~BLECharacteristic();
 
   void addDescriptor(BLEDescriptor *pDescriptor);
-  BLEDescriptor *getDescriptorByUUID(const char *descriptorUUID);
-  BLEDescriptor *getDescriptorByUUID(BLEUUID descriptorUUID);
-  BLEUUID getUUID();
-  String getValue();
+  BLEDescriptor *getDescriptorByUUID(const char *descriptorUUID) const;
+  BLEDescriptor *getDescriptorByUUID(BLEUUID descriptorUUID) const;
+  BLEUUID getUUID() const;
+  String getValue() const;
   uint8_t *getData();
-  size_t getLength();
+  size_t getLength() const;
   void indicate();
   void notify(bool is_notification = true);
   void setCallbacks(BLECharacteristicCallbacks *pCallbacks);
@@ -197,10 +197,10 @@ public:
   void setValue(int data32);
   void setValue(float data32);
   void setValue(double data64);
-  String toString();
-  uint16_t getHandle();
+  String toString() const;
+  uint16_t getHandle() const;
   void setAccessPermissions(uint16_t perm);
-  esp_gatt_char_prop_t getProperties();
+  esp_gatt_char_prop_t getProperties() const;
   void setReadProperty(bool value);
   void setWriteProperty(bool value);
   void setNotifyProperty(bool value);
@@ -253,7 +253,7 @@ private:
    ***************************************************************************/
 
   void executeCreate(BLEService *pService);
-  BLEService *getService();
+  BLEService *getService() const;
   void setHandle(uint16_t handle);
 
   /***************************************************************************
@@ -330,5 +330,6 @@ public:
 };
 
 #endif /* CONFIG_BLUEDROID_ENABLED || CONFIG_NIMBLE_ENABLED */
-#endif /* SOC_BLE_SUPPORTED */
+#endif /* SOC_BLE_SUPPORTED || CONFIG_ESP_HOSTED_ENABLE_BT_NIMBLE */
+
 #endif /* COMPONENTS_CPP_UTILS_BLECHARACTERISTIC_H_ */

@@ -10,9 +10,8 @@
  */
 
 #include "soc/soc_caps.h"
-#if SOC_BLE_SUPPORTED
-
 #include "sdkconfig.h"
+#if defined(SOC_BLE_SUPPORTED) || defined(CONFIG_ESP_HOSTED_ENABLE_BT_NIMBLE)
 #if defined(CONFIG_BLUEDROID_ENABLED) || defined(CONFIG_NIMBLE_ENABLED)
 
 /*****************************************************************************
@@ -91,7 +90,7 @@ uint8_t *BLEValue::getData() {
  * @brief Get the length of the data in bytes.
  * @return The length of the data in bytes.
  */
-size_t BLEValue::getLength() {
+size_t BLEValue::getLength() const {
   return m_value.length();
 }  // getLength
 
@@ -99,14 +98,14 @@ size_t BLEValue::getLength() {
  * @brief Get the read offset.
  * @return The read offset into the read.
  */
-uint16_t BLEValue::getReadOffset() {
+uint16_t BLEValue::getReadOffset() const {
   return m_readOffset;
 }  // getReadOffset
 
 /**
  * @brief Get the current value.
  */
-String BLEValue::getValue() {
+String BLEValue::getValue() const {
   return m_value;
 }  // getValue
 
@@ -135,4 +134,4 @@ void BLEValue::setValue(const uint8_t *pData, size_t length) {
 }  // setValue
 
 #endif /* CONFIG_BLUEDROID_ENABLED || CONFIG_NIMBLE_ENABLED */
-#endif /* SOC_BLE_SUPPORTED */
+#endif /* SOC_BLE_SUPPORTED || CONFIG_ESP_HOSTED_ENABLE_BT_NIMBLE */
