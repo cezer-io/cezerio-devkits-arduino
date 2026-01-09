@@ -78,6 +78,9 @@
 #include "esp_netif.h"
 
 #if CONFIG_ETH_USE_ESP32_EMAC
+#if defined __has_include && __has_include("esp_eth_phy_lan867x.h")
+#define ETH_PHY_LAN867X_SUPPORTED 1
+#endif
 #define ETH_PHY_IP101 ETH_PHY_TLK110
 #if CONFIG_IDF_TARGET_ESP32
 typedef enum {
@@ -138,6 +141,9 @@ typedef enum {
   ETH_PHY_DP83848,
   ETH_PHY_KSZ8041,
   ETH_PHY_KSZ8081,
+#if ETH_PHY_LAN867X_SUPPORTED
+  ETH_PHY_LAN867X,
+#endif
 #endif /* CONFIG_ETH_USE_ESP32_EMAC */
 #if CONFIG_ETH_SPI_ETHERNET_DM9051
   ETH_PHY_DM9051,
@@ -192,8 +198,14 @@ public:
 
   // ETH Handle APIs
   bool fullDuplex() const;
-  uint8_t linkSpeed() const;
+  bool setFullDuplex(bool on);
+
+  uint16_t linkSpeed() const;
+  bool setLinkSpeed(uint16_t speed);  //10 or 100
+
   bool autoNegotiation() const;
+  bool setAutoNegotiation(bool on);
+
   uint32_t phyAddr() const;
 
   esp_eth_handle_t handle() const;
@@ -223,6 +235,10 @@ private:
   esp_eth_netif_glue_handle_t _glue_handle;
   esp_eth_mac_t *_mac;
   esp_eth_phy_t *_phy;
+  bool _eth_started;
+  uint16_t _link_speed;
+  bool _full_duplex;
+  bool _auto_negotiation;
 #if ETH_SPI_SUPPORTS_CUSTOM
   SPIClass *_spi;
   char _cs_str[10];
@@ -241,6 +257,7 @@ private:
   int8_t _pin_rmii_clock;
 #endif /* CONFIG_ETH_USE_ESP32_EMAC */
   size_t _task_stack_size;
+  network_event_handle_t _eth_connected_event_handle;
 
   static bool ethDetachBus(void *bus_pointer);
   bool beginSPI(
@@ -250,11 +267,18 @@ private:
 #endif
     int sck, int miso, int mosi, spi_host_device_t spi_host, uint8_t spi_freq_mhz
   );
+  bool _setFullDuplex(bool on);
+  bool _setLinkSpeed(uint16_t speed);
+  bool _setAutoNegotiation(bool on);
+
+  void _delMacAndPhy();
 
   friend class EthernetClass;  // to access beginSPI
 };
 
+#if !defined(NO_GLOBAL_INSTANCES) && !defined(NO_GLOBAL_ETH)
 extern ETHClass ETH;
+#endif
 
 #endif /* _ETH_H_ */
 #endif /* CONFIG_ETH_ENABLED */

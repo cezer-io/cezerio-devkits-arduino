@@ -1,3 +1,17 @@
+// Copyright 2025 Espressif Systems (Shanghai) PTE LTD
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 /* Class of Zigbee Window Covering endpoint inherited from common EP class */
 
 #pragma once
@@ -87,25 +101,25 @@ public:
   }
 
   // Set the window covering position in centimeters or percentage (0-100)
-  void setLiftPosition(uint16_t lift_position);
-  void setLiftPercentage(uint8_t lift_percentage);
-  void setTiltPosition(uint16_t tilt_position);
-  void setTiltPercentage(uint8_t tilt_percentage);
+  bool setLiftPosition(uint16_t lift_position);
+  bool setLiftPercentage(uint8_t lift_percentage);
+  bool setTiltPosition(uint16_t tilt_position);
+  bool setTiltPercentage(uint8_t tilt_percentage);
 
   // Set the window covering type (see ZigbeeWindowCoveringType)
-  void setCoveringType(ZigbeeWindowCoveringType covering_type);
+  bool setCoveringType(ZigbeeWindowCoveringType covering_type);
 
   // Set window covering config/status, for more info see esp_zb_zcl_window_covering_config_status_t
-  void setConfigStatus(
+  bool setConfigStatus(
     bool operational, bool online, bool commands_reversed, bool lift_closed_loop, bool tilt_closed_loop, bool lift_encoder_controlled,
     bool tilt_encoder_controlled
   );
 
   // Set configuration mode of window covering, for more info see esp_zb_zcl_window_covering_mode_t
-  void setMode(bool motor_reversed, bool calibration_mode, bool maintenance_mode, bool leds_on);
+  bool setMode(bool motor_reversed, bool calibration_mode, bool maintenance_mode, bool leds_on);
 
   // Set limits of motion, for more info see esp_zb_zcl_window_covering_info_attr_t
-  void setLimits(
+  bool setLimits(
     uint16_t installed_open_limit_lift, uint16_t installed_closed_limit_lift, uint16_t installed_open_limit_tilt, uint16_t installed_closed_limit_tilt
   );
 

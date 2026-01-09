@@ -1,4 +1,4 @@
-// Copyright 2024 Espressif Systems (Shanghai) PTE LTD
+// Copyright 2025 Espressif Systems (Shanghai) PTE LTD
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,10 @@
 
 #include <Matter.h>
 #include <app/server/Server.h>
+#if CONFIG_ENABLE_MATTER_OVER_THREAD
+#include "esp_openthread_types.h"
+#include "platform/ESP32/OpenthreadLauncher.h"
+#endif
 
 using namespace esp_matter;
 using namespace esp_matter::attribute;
@@ -28,7 +32,8 @@ constexpr auto k_timeout_seconds = 300;
 
 static bool _matter_has_started = false;
 static node::config_t node_config;
-static node_t *deviceNode = NULL;
+static node_t *deviceNode = nullptr;
+ArduinoMatter::matterEventCB ArduinoMatter::_matterEventCB = nullptr;
 
 // This callback is called for every attribute update. The callback implementation shall
 // handle the desired attributes and return an appropriate error code. If the attribute
@@ -42,7 +47,7 @@ static esp_err_t app_attribute_update_cb(
   switch (type) {
     case PRE_UPDATE:  // Callback before updating the value in the database
       log_v("Attribute update callback: PRE_UPDATE");
-      if (ep != NULL) {
+      if (ep != nullptr) {
         err = ep->attributeChangeCB(endpoint_id, cluster_id, attribute_id, val) ? ESP_OK : ESP_FAIL;
       }
       break;
@@ -78,7 +83,7 @@ static esp_err_t app_identification_cb(identification::callback_type_t type, uin
     identifyIsActive = false;
     log_v("Identification callback: STOP");
   }
-  if (ep != NULL) {
+  if (ep != nullptr) {
     err = ep->endpointIdentifyCB(endpoint_id, identifyIsActive) ? ESP_OK : ESP_FAIL;
   }
 
@@ -89,21 +94,21 @@ static esp_err_t app_identification_cb(identification::callback_type_t type, uin
 static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
   switch (event->Type) {
     case chip::DeviceLayer::DeviceEventType::kInterfaceIpAddressChanged:
-      log_i(
+      log_d(
         "Interface %s Address changed", event->InterfaceIpAddressChanged.Type == chip::DeviceLayer::InterfaceIpChangeType::kIpV4_Assigned ? "IPv4" : "IPV6"
       );
       break;
-    case chip::DeviceLayer::DeviceEventType::kCommissioningComplete:       log_i("Commissioning complete"); break;
-    case chip::DeviceLayer::DeviceEventType::kFailSafeTimerExpired:        log_i("Commissioning failed, fail safe timer expired"); break;
-    case chip::DeviceLayer::DeviceEventType::kCommissioningSessionStarted: log_i("Commissioning session started"); break;
-    case chip::DeviceLayer::DeviceEventType::kCommissioningSessionStopped: log_i("Commissioning session stopped"); break;
-    case chip::DeviceLayer::DeviceEventType::kCommissioningWindowOpened:   log_i("Commissioning window opened"); break;
-    case chip::DeviceLayer::DeviceEventType::kCommissioningWindowClosed:   log_i("Commissioning window closed"); break;
+    case chip::DeviceLayer::DeviceEventType::kCommissioningComplete:       log_d("Commissioning complete"); break;
+    case chip::DeviceLayer::DeviceEventType::kFailSafeTimerExpired:        log_d("Commissioning failed, fail safe timer expired"); break;
+    case chip::DeviceLayer::DeviceEventType::kCommissioningSessionStarted: log_d("Commissioning session started"); break;
+    case chip::DeviceLayer::DeviceEventType::kCommissioningSessionStopped: log_d("Commissioning session stopped"); break;
+    case chip::DeviceLayer::DeviceEventType::kCommissioningWindowOpened:   log_d("Commissioning window opened"); break;
+    case chip::DeviceLayer::DeviceEventType::kCommissioningWindowClosed:   log_d("Commissioning window closed"); break;
     case chip::DeviceLayer::DeviceEventType::kFabricRemoved:
     {
-      log_i("Fabric removed successfully");
+      log_d("Fabric removed successfully");
       if (chip::Server::GetInstance().GetFabricTable().FabricCount() == 0) {
-        log_i("No fabric left, opening commissioning window");
+        log_d("No fabric left, opening commissioning window");
         chip::CommissioningWindowManager &commissionMgr = chip::Server::GetInstance().GetCommissioningWindowManager();
         constexpr auto kTimeoutSeconds = chip::System::Clock::Seconds16(k_timeout_seconds);
         if (!commissionMgr.IsCommissioningWindowOpen()) {
@@ -116,11 +121,15 @@ static void app_event_cb(const ChipDeviceEvent *event, intptr_t arg) {
       }
       break;
     }
-    case chip::DeviceLayer::DeviceEventType::kFabricWillBeRemoved: log_i("Fabric will be removed"); break;
-    case chip::DeviceLayer::DeviceEventType::kFabricUpdated:       log_i("Fabric is updated"); break;
-    case chip::DeviceLayer::DeviceEventType::kFabricCommitted:     log_i("Fabric is committed"); break;
-    case chip::DeviceLayer::DeviceEventType::kBLEDeinitialized:    log_i("BLE deinitialized and memory reclaimed"); break;
+    case chip::DeviceLayer::DeviceEventType::kFabricWillBeRemoved: log_d("Fabric will be removed"); break;
+    case chip::DeviceLayer::DeviceEventType::kFabricUpdated:       log_d("Fabric is updated"); break;
+    case chip::DeviceLayer::DeviceEventType::kFabricCommitted:     log_d("Fabric is committed"); break;
+    case chip::DeviceLayer::DeviceEventType::kBLEDeinitialized:    log_d("BLE deinitialized and memory reclaimed"); break;
     default:                                                       break;
+  }
+  // Check if the user-defined callback is set
+  if (ArduinoMatter::_matterEventCB != nullptr) {
+    ArduinoMatter::_matterEventCB(static_cast<matterEvent_t>(event->Type), event);
   }
 }
 
@@ -146,6 +155,18 @@ void ArduinoMatter::begin() {
     return;
   }
 
+#if CONFIG_ENABLE_MATTER_OVER_THREAD
+  // Set OpenThread platform config
+  esp_openthread_platform_config_t config;
+  memset(&config, 0, sizeof(esp_openthread_platform_config_t));
+  config.radio_config.radio_mode = RADIO_MODE_NATIVE;
+  config.host_config.host_connection_mode = HOST_CONNECTION_MODE_NONE;
+  config.port_config.storage_partition_name = "nvs";
+  config.port_config.netif_queue_size = 10;
+  config.port_config.task_queue_size = 10;
+  set_openthread_platform_config(&config);
+#endif
+
   /* Matter start */
   esp_err_t err = esp_matter::start(app_event_cb);
   if (err != ESP_OK) {
@@ -154,31 +175,70 @@ void ArduinoMatter::begin() {
   }
 }
 
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD
-bool ArduinoMatter::isThreadConnected() {
-  return false;  // Thread Network TBD
-}
+// Network and Commissioning Capability Queries
+bool ArduinoMatter::isWiFiStationEnabled() {
+  // Check hardware support (SOC capabilities) AND Matter configuration
+#ifdef SOC_WIFI_SUPPORTED
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION
+  return true;
+#else
+  return false;
 #endif
+#else
+  return false;
+#endif
+}
+
+bool ArduinoMatter::isWiFiAccessPointEnabled() {
+  // Check hardware support (SOC capabilities) AND Matter configuration
+#ifdef SOC_WIFI_SUPPORTED
+#if CHIP_DEVICE_CONFIG_ENABLE_WIFI_AP
+  return true;
+#else
+  return false;
+#endif
+#else
+  return false;
+#endif
+}
+
+bool ArduinoMatter::isThreadEnabled() {
+  // Check Matter configuration only
+#if CONFIG_ENABLE_MATTER_OVER_THREAD || CHIP_DEVICE_CONFIG_ENABLE_THREAD
+  return true;
+#else
+  return false;
+#endif
+}
+
+bool ArduinoMatter::isBLECommissioningEnabled() {
+  // Check hardware support (SOC capabilities) AND Matter/ESP configuration
+  // BLE commissioning requires: SOC BLE support AND (CHIPoBLE or NimBLE enabled)
+#ifdef SOC_BLE_SUPPORTED
+#if CONFIG_ENABLE_CHIPOBLE
+  return true;
+#else
+  return false;
+#endif
+#else
+  return false;
+#endif
+}
 
 bool ArduinoMatter::isDeviceCommissioned() {
   return chip::Server::GetInstance().GetFabricTable().FabricCount() > 0;
 }
 
-#if CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION
 bool ArduinoMatter::isWiFiConnected() {
   return chip::DeviceLayer::ConnectivityMgr().IsWiFiStationConnected();
 }
-#endif
+
+bool ArduinoMatter::isThreadConnected() {
+  return chip::DeviceLayer::ConnectivityMgr().IsThreadAttached();
+}
 
 bool ArduinoMatter::isDeviceConnected() {
-  bool retCode = false;
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD
-  retCode |= ArduinoMatter::isThreadConnected();
-#endif
-#if CHIP_DEVICE_CONFIG_ENABLE_WIFI_STATION
-  retCode |= ArduinoMatter::isWiFiConnected();
-#endif
-  return retCode;
+  return ArduinoMatter::isWiFiConnected() || ArduinoMatter::isThreadConnected();
 }
 
 void ArduinoMatter::decommission() {

@@ -466,9 +466,6 @@ __attribute__((weak)) int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint
 __attribute__((weak)) int32_t tud_msc_scsi_cb(uint8_t lun, uint8_t const scsi_cmd[16], void *buffer, uint16_t bufsize) {
   return -1;
 }
-__attribute__((weak)) bool tud_msc_is_writable_cb(uint8_t lun) {
-  return false;
-}
 #endif
 #if CFG_TUD_NCM
 __attribute__((weak)) bool tud_network_recv_cb(const uint8_t *src, uint16_t size) {
@@ -480,6 +477,25 @@ __attribute__((weak)) uint16_t tud_network_xmit_cb(uint8_t *dst, void *ref, uint
 __attribute__((weak)) void tud_network_init_cb(void) {}
 #endif
 
+#if CFG_TUH_HID
+__attribute__((weak)) void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t idx, uint8_t const *report_desc, uint16_t desc_len) {}
+__attribute__((weak)) void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t idx) {}
+__attribute__((weak)) void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t idx, uint8_t const *report, uint16_t len) {}
+__attribute__((weak)) void tuh_hid_report_sent_cb(uint8_t dev_addr, uint8_t idx, uint8_t const *report, uint16_t len) {}
+__attribute__((weak)) void tuh_hid_get_report_complete_cb(uint8_t dev_addr, uint8_t idx, uint8_t report_id, uint8_t report_type, uint16_t len) {}
+__attribute__((weak)) void tuh_hid_set_report_complete_cb(uint8_t dev_addr, uint8_t idx, uint8_t report_id, uint8_t report_type, uint16_t len) {}
+__attribute__((weak)) void tuh_hid_set_protocol_complete_cb(uint8_t dev_addr, uint8_t idx, uint8_t protocol) {}
+#endif
+#if CFG_TUH_CDC
+__attribute__((weak)) void tuh_cdc_mount_cb(uint8_t idx) {}
+__attribute__((weak)) void tuh_cdc_umount_cb(uint8_t idx) {}
+__attribute__((weak)) void tuh_cdc_rx_cb(uint8_t idx) {}
+__attribute__((weak)) void tuh_cdc_tx_complete_cb(uint8_t idx) {}
+#endif
+#if CFG_TUH_MSC
+__attribute__((weak)) void tuh_msc_mount_cb(uint8_t dev_addr) {}
+__attribute__((weak)) void tuh_msc_umount_cb(uint8_t dev_addr) {}
+#endif
 /*
  * Private API
  * */

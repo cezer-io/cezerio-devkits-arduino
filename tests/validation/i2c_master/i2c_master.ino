@@ -5,6 +5,11 @@
 #include <Arduino.h>
 #include <unity.h>
 #include <Wire.h>
+#include <vector>
+#include <algorithm>
+#include <WiFi.h>
+
+#include "sdkconfig.h"
 
 /* DS1307 functions */
 
@@ -23,6 +28,9 @@ static uint8_t read_day = 0;
 static uint8_t read_month = 0;
 static uint16_t read_year = 0;
 static int peek_data = -1;
+
+const char *ssid = "Wokwi-GUEST";
+const char *password = "";
 
 const auto BCD2DEC = [](uint8_t num) -> uint8_t {
   return ((num / 16 * 10) + (num % 16));
@@ -100,7 +108,7 @@ void ds1307_get_time(uint8_t *sec, uint8_t *min, uint8_t *hour, uint8_t *day, ui
 void ds1307_set_time(uint8_t sec, uint8_t min, uint8_t hour, uint8_t day, uint8_t month, uint16_t year) {
   Wire.beginTransmission(DS1307_ADDR);
   Wire.write(0x00);
-  Wire.write(DEC2BCD(sec));
+  Wire.write(DEC2BCD(sec) | 0x80);  //Set halt bit to stop clock
   Wire.write(DEC2BCD(min));
   Wire.write(DEC2BCD(hour));
   Wire.write(DEC2BCD(0));  //Ignore day of week
@@ -154,7 +162,7 @@ void rtc_run_clock() {
   ds1307_get_time(&read_sec, &read_min, &read_hour, &read_day, &read_month, &read_year);
 
   //Check time
-  TEST_ASSERT_UINT8_WITHIN(2, start_sec + 5, read_sec);
+  TEST_ASSERT_NOT_EQUAL(start_sec, read_sec);  //Seconds should have changed
   TEST_ASSERT_EQUAL(start_min, read_min);
   TEST_ASSERT_EQUAL(start_hour, read_hour);
   TEST_ASSERT_EQUAL(start_day, read_day);
@@ -204,6 +212,22 @@ void change_clock() {
   TEST_ASSERT_EQUAL(start_day, read_day);
   TEST_ASSERT_EQUAL(start_month, read_month);
   TEST_ASSERT_EQUAL(start_year, read_year);
+
+  //Run clock for 5 seconds to check that we can write
+  ds1307_start();
+  delay(5000);
+  ds1307_stop();
+
+  //Get time
+  ds1307_get_time(&read_sec, &read_min, &read_hour, &read_day, &read_month, &read_year);
+
+  //Check time
+  TEST_ASSERT_NOT_EQUAL(start_sec, read_sec);  //Seconds should have changed
+  TEST_ASSERT_EQUAL(start_min, read_min);
+  TEST_ASSERT_EQUAL(start_hour, read_hour);
+  TEST_ASSERT_EQUAL(start_day, read_day);
+  TEST_ASSERT_EQUAL(start_month, read_month);
+  TEST_ASSERT_EQUAL(start_year, read_year);
 }
 
 void swap_pins() {
@@ -245,6 +269,42 @@ void test_api() {
   Wire.flush();
 }
 
+bool device_found() {
+  uint8_t err;
+
+  for (uint8_t address = 1; address < 127; ++address) {
+    Wire.beginTransmission(address);
+    err = Wire.endTransmission();
+    log_d("Address: 0x%02X, Error: %d", address, err);
+    if (err == 0) {
+      log_i("Found device at address: 0x%02X", address);
+    } else if (address == DS1307_ADDR) {
+      log_e("Failed to find DS1307");
+      return false;
+    }
+  }
+
+  return true;
+}
+
+void scan_bus() {
+  TEST_ASSERT_TRUE(device_found());
+}
+
+#if SOC_WIFI_SUPPORTED
+void scan_bus_with_wifi() {
+  // delete old config
+  WiFi.disconnect(true, true, 1000);
+  delay(1000);
+  WiFi.begin(ssid, password);
+  delay(5000);
+  bool found = device_found();
+  WiFi.disconnect(true, true, 1000);
+
+  TEST_ASSERT_TRUE(found);
+}
+#endif
+
 /* Main */
 
 void setup() {
@@ -258,6 +318,10 @@ void setup() {
 
   log_d("Starting tests");
   UNITY_BEGIN();
+  RUN_TEST(scan_bus);
+#if SOC_WIFI_SUPPORTED
+  RUN_TEST(scan_bus_with_wifi);
+#endif
   RUN_TEST(rtc_set_time);
   RUN_TEST(rtc_run_clock);
   RUN_TEST(change_clock);

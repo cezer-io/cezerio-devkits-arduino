@@ -96,6 +96,29 @@ typedef enum {
   UART_PARITY_ERROR
 } hardwareSerial_error_t;
 
+typedef enum {
+  UART_CLK_SRC_DEFAULT = UART_SCLK_DEFAULT,
+#if SOC_UART_SUPPORT_APB_CLK
+  UART_CLK_SRC_APB = UART_SCLK_APB,
+#endif
+#if SOC_UART_SUPPORT_PLL_F40M_CLK
+  UART_CLK_SRC_PLL = UART_SCLK_PLL_F40M,
+#elif SOC_UART_SUPPORT_PLL_F80M_CLK
+  UART_CLK_SRC_PLL = UART_SCLK_PLL_F80M,
+#elif CONFIG_IDF_TARGET_ESP32H2
+  UART_CLK_SRC_PLL = UART_SCLK_PLL_F48M,
+#endif
+#if SOC_UART_SUPPORT_XTAL_CLK
+  UART_CLK_SRC_XTAL = UART_SCLK_XTAL,
+#endif
+#if SOC_UART_SUPPORT_RTC_CLK
+  UART_CLK_SRC_RTC = UART_SCLK_RTC,
+#endif
+#if SOC_UART_SUPPORT_REF_TICK
+  UART_CLK_SRC_REF_TICK = UART_SCLK_REF_TICK,
+#endif
+} SerialClkSrc;
+
 #ifndef ARDUINO_SERIAL_EVENT_TASK_STACK_SIZE
 #ifndef CONFIG_ARDUINO_SERIAL_EVENT_TASK_STACK_SIZE
 #define ARDUINO_SERIAL_EVENT_TASK_STACK_SIZE 2048
@@ -139,6 +162,10 @@ typedef enum {
 #define SOC_RX0 (gpio_num_t)23
 #elif CONFIG_IDF_TARGET_ESP32P4
 #define SOC_RX0 (gpio_num_t)38
+#elif CONFIG_IDF_TARGET_ESP32C5
+#define SOC_RX0 (gpio_num_t)12
+#elif CONFIG_IDF_TARGET_ESP32C61
+#define SOC_RX0 (gpio_num_t)10
 #endif
 #endif
 
@@ -157,6 +184,8 @@ typedef enum {
 #define SOC_TX0 (gpio_num_t)24
 #elif CONFIG_IDF_TARGET_ESP32P4
 #define SOC_TX0 (gpio_num_t)37
+#elif CONFIG_IDF_TARGET_ESP32C5 || CONFIG_IDF_TARGET_ESP32C61
+#define SOC_TX0 (gpio_num_t)11
 #endif
 #endif
 
@@ -180,6 +209,10 @@ typedef enum {
 #define RX1 (gpio_num_t)0
 #elif CONFIG_IDF_TARGET_ESP32P4
 #define RX1 (gpio_num_t)11
+#elif CONFIG_IDF_TARGET_ESP32C5
+#define RX1 (gpio_num_t)4
+#elif CONFIG_IDF_TARGET_ESP32C61
+#define RX1 (gpio_num_t)8
 #endif
 #endif
 
@@ -200,6 +233,10 @@ typedef enum {
 #define TX1 (gpio_num_t)1
 #elif CONFIG_IDF_TARGET_ESP32P4
 #define TX1 (gpio_num_t)10
+#elif CONFIG_IDF_TARGET_ESP32C5
+#define TX1 (gpio_num_t)5
+#elif CONFIG_IDF_TARGET_ESP32C61
+#define TX1 (gpio_num_t)29
 #endif
 #endif
 #endif /* SOC_UART_HP_NUM > 1 */
@@ -325,7 +362,12 @@ public:
 
   void setDebugOutput(bool);
 
-  void setRxInvert(bool);
+  // functions used to enable or disable UART pins signal inversion
+  // returns the requested operation success status
+  bool setRxInvert(bool);
+  bool setTxInvert(bool);
+  bool setCtsInvert(bool);
+  bool setRtsInvert(bool);
 
   // Negative Pin Number will keep it unmodified, thus this function can set individual pins
   // setPins() can be called after or before begin()
@@ -344,6 +386,17 @@ public:
   //    UART_MODE_RS485_COLLISION_DETECT = 0x03    mode: RS485 collision detection UART mode (used for test purposes)
   //    UART_MODE_RS485_APP_CTRL         = 0x04    mode: application control RS485 UART mode (used for test purposes)
   bool setMode(SerialMode mode);
+  // Used to set the UART clock source mode. It must be set before calling begin(), otherwise it won't have any effect.
+  // Not all clock source are available to every SoC. The compatible option are listed here:
+  // UART_CLK_SRC_DEFAULT      :: any SoC - it will set whatever IDF defines as the default UART Clock Source
+  // UART_CLK_SRC_APB          :: ESP32, ESP32-S2, ESP32-C3 and ESP32-S3
+  // UART_CLK_SRC_PLL          :: ESP32-C2, ESP32-C5, ESP32-C6, ESP32-C61, ESP32-H2 and ESP32-P4
+  // UART_CLK_SRC_XTAL         :: ESP32-C2, ESP32-C3, ESP32-C5, ESP32-C6, ESP32-C61, ESP32-H2, ESP32-S3 and ESP32-P4
+  // UART_CLK_SRC_RTC          :: ESP32-C2, ESP32-C3, ESP32-C5, ESP32-C6, ESP32-C61, ESP32-H2, ESP32-S3 and ESP32-P4
+  // UART_CLK_SRC_REF_TICK     :: ESP32 and ESP32-S2
+  // Note: CLK_SRC_PLL Freq depends on the SoC - ESP32-C2 has 40MHz, ESP32-H2 has 48MHz and ESP32-C5, C6, C61 and P4 has 80MHz
+  // Note: ESP32-C6, C61, ESP32-P4 and ESP32-C5 have LP UART that will use only RTC_FAST or XTAL/2 as Clock Source
+  bool setClockSource(SerialClkSrc clkSrc);
   size_t setRxBufferSize(size_t new_size);
   size_t setTxBufferSize(size_t new_size);
 

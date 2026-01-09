@@ -61,6 +61,31 @@ HardwareSerial Serial5(5);
 extern void HWCDCSerialEvent(void) __attribute__((weak));
 #endif
 
+// C-callable helper used by HAL when pins are detached and the high-level
+// HardwareSerial instance must be finalized.
+extern "C" void hal_uart_notify_pins_detached(int uart_num) {
+  log_d("hal_uart_notify_pins_detached: Notifying HardwareSerial for UART%d", uart_num);
+  switch (uart_num) {
+    case 0: Serial0.end(); break;
+#if SOC_UART_NUM > 1
+    case 1: Serial1.end(); break;
+#endif
+#if SOC_UART_NUM > 2
+    case 2: Serial2.end(); break;
+#endif
+#if SOC_UART_NUM > 3
+    case 3: Serial3.end(); break;
+#endif
+#if SOC_UART_NUM > 4
+    case 4: Serial4.end(); break;
+#endif
+#if SOC_UART_NUM > 5
+    case 5: Serial5.end(); break;
+#endif
+    default: log_e("hal_uart_notify_pins_detached: UART%d not handled!", uart_num); break;
+  }
+}
+
 #if USB_SERIAL_IS_DEFINED == 1  // Native USB CDC Event
 // Used by Hardware Serial for USB CDC events
 extern void USBSerialEvent(void) __attribute__((weak));
@@ -136,8 +161,6 @@ HardwareSerial::HardwareSerial(uint8_t uart_nr)
     }
   }
 #endif
-  // set deinit function in the Peripheral Manager
-  uart_init_PeriMan();
 }
 
 HardwareSerial::~HardwareSerial() {
@@ -485,9 +508,6 @@ void HardwareSerial::end() {
   // including any tasks or debug message channel (log_x()) - but not for IDF log messages!
   _onReceiveCB = NULL;
   _onReceiveErrorCB = NULL;
-  if (uartGetDebug() == _uart_nr) {
-    uartSetDebug(0);
-  }
   _rxFIFOFull = 0;
   uartEnd(_uart_nr);    // fully detach all pins and delete the UART driver
   _destroyEventTask();  // when IDF uart driver is deleted, _eventTask must finish too
@@ -574,8 +594,20 @@ HardwareSerial::operator bool() const {
   return uartIsDriverInstalled(_uart);
 }
 
-void HardwareSerial::setRxInvert(bool invert) {
-  uartSetRxInvert(_uart, invert);
+bool HardwareSerial::setRxInvert(bool invert) {
+  return uartSetRxInvert(_uart, invert);
+}
+
+bool HardwareSerial::setTxInvert(bool invert) {
+  return uartSetTxInvert(_uart, invert);
+}
+
+bool HardwareSerial::setCtsInvert(bool invert) {
+  return uartSetCtsInvert(_uart, invert);
+}
+
+bool HardwareSerial::setRtsInvert(bool invert) {
+  return uartSetRtsInvert(_uart, invert);
 }
 
 // negative Pin value will keep it unmodified
@@ -607,6 +639,24 @@ bool HardwareSerial::setMode(SerialMode mode) {
   return uartSetMode(_uart, mode);
 }
 
+// Sets the UART Clock Source based on the compatible SoC options
+// This method must be called before starting UART using begin(), otherwise it won't have any effect.
+// Clock Source Options are:
+// UART_CLK_SRC_DEFAULT      :: any SoC - it will set whatever IDF defines as the default UART Clock Source
+// UART_CLK_SRC_APB          :: ESP32, ESP32-S2, ESP32-C3 and ESP32-S3
+// UART_CLK_SRC_PLL          :: ESP32-C2, ESP32-C5, ESP32-C6, ESP32-C61, ESP32-H2 and ESP32-P4
+// UART_CLK_SRC_XTAL         :: ESP32-C2, ESP32-C3, ESP32-C5, ESP32-C6, ESP32-C61, ESP32-H2, ESP32-S3 and ESP32-P4
+// UART_CLK_SRC_RTC          :: ESP32-C2, ESP32-C3, ESP32-C5, ESP32-C6, ESP32-C61, ESP32-H2, ESP32-S3 and ESP32-P4
+// UART_CLK_SRC_REF_TICK     :: ESP32 and ESP32-S2
+// Note: CLK_SRC_PLL Freq depends on the SoC - ESP32-C2 has 40MHz, ESP32-H2 has 48MHz and ESP32-C5, C6, C61 and P4 has 80MHz
+// Note: ESP32-C6, C61, ESP32-P4 and ESP32-C5 have LP UART that will use only RTC_FAST or XTAL/2 as Clock Source
+bool HardwareSerial::setClockSource(SerialClkSrc clkSrc) {
+  if (_uart) {
+    log_e("No Clock Source change was done. This function must be called before beginning UART%d.", _uart_nr);
+    return false;
+  }
+  return uartSetClockSource(_uart_nr, (uart_sclk_t)clkSrc);
+}
 // minimum total RX Buffer size is the UART FIFO space (128 bytes for most SoC) + 1. IDF imposition.
 // LP UART has FIFO of 16 bytes
 size_t HardwareSerial::setRxBufferSize(size_t new_size) {
