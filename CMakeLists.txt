@@ -90,6 +90,7 @@ set(ARDUINO_ALL_LIBRARIES
   ESP_I2S
   ESP_NOW
   ESP_SR
+  ESP_HostedOTA
   ESPmDNS
   Ethernet
   FFat
@@ -146,6 +147,9 @@ set(ARDUINO_LIBRARY_ESP_SR_SRCS
   libraries/ESP_SR/src/ESP_SR.cpp
   libraries/ESP_SR/src/esp32-hal-sr.c)
 
+set(ARDUINO_LIBRARY_ESP_HostedOTA_SRCS
+  libraries/ESP_HostedOTA/src/ESP_HostedOTA.cpp)
+
 set(ARDUINO_LIBRARY_ESPmDNS_SRCS libraries/ESPmDNS/src/ESPmDNS.cpp)
 
 set(ARDUINO_LIBRARY_Ethernet_SRCS libraries/Ethernet/src/ETH.cpp)
@@ -187,18 +191,22 @@ set(ARDUINO_LIBRARY_Matter_SRCS
   libraries/Matter/src/MatterEndpoints/MatterEnhancedColorLight.cpp
   libraries/Matter/src/MatterEndpoints/MatterFan.cpp
   libraries/Matter/src/MatterEndpoints/MatterTemperatureSensor.cpp
+  libraries/Matter/src/MatterEndpoints/MatterTemperatureControlledCabinet.cpp
   libraries/Matter/src/MatterEndpoints/MatterHumiditySensor.cpp
   libraries/Matter/src/MatterEndpoints/MatterContactSensor.cpp
+  libraries/Matter/src/MatterEndpoints/MatterWaterLeakDetector.cpp
+  libraries/Matter/src/MatterEndpoints/MatterWaterFreezeDetector.cpp
+  libraries/Matter/src/MatterEndpoints/MatterRainSensor.cpp
   libraries/Matter/src/MatterEndpoints/MatterPressureSensor.cpp
   libraries/Matter/src/MatterEndpoints/MatterOccupancySensor.cpp
   libraries/Matter/src/MatterEndpoints/MatterOnOffPlugin.cpp
+  libraries/Matter/src/MatterEndpoints/MatterDimmablePlugin.cpp
   libraries/Matter/src/MatterEndpoints/MatterThermostat.cpp
+  libraries/Matter/src/MatterEndpoints/MatterWindowCovering.cpp
   libraries/Matter/src/Matter.cpp
   libraries/Matter/src/MatterEndPoint.cpp)
 
-set(ARDUINO_LIBRARY_PPP_SRCS
-  libraries/PPP/src/PPP.cpp
-  libraries/PPP/src/ppp.c)
+set(ARDUINO_LIBRARY_PPP_SRCS libraries/PPP/src/PPP.cpp)
 
 set(ARDUINO_LIBRARY_Preferences_SRCS libraries/Preferences/src/Preferences.cpp)
 
@@ -229,7 +237,8 @@ set(ARDUINO_LIBRARY_Ticker_SRCS libraries/Ticker/src/Ticker.cpp)
 
 set(ARDUINO_LIBRARY_Update_SRCS
   libraries/Update/src/Updater.cpp
-  libraries/Update/src/HttpsOTAUpdate.cpp)
+  libraries/Update/src/HttpsOTAUpdate.cpp
+  libraries/Update/src/Updater_Signing.cpp)
 
 set(ARDUINO_LIBRARY_USB_SRCS
   libraries/USB/src/USBHID.cpp

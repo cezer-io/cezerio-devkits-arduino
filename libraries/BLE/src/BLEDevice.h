@@ -192,6 +192,10 @@ public:
   static esp_err_t setMTU(uint16_t mtu);
   static uint16_t getMTU();
   static bool getInitialized();
+  static bool getPeerIRK(BLEAddress peerAddress, uint8_t *irk);
+  static String getPeerIRKString(BLEAddress peerAddress);
+  static String getPeerIRKBase64(BLEAddress peerAddress);
+  static String getPeerIRKReverse(BLEAddress peerAddress);
   static BLEAdvertising *getAdvertising();
   static void startAdvertising();
   static void stopAdvertising();
@@ -230,6 +234,10 @@ public:
   static bool setOwnAddr(uint8_t *addr);
   static void setDeviceCallbacks(BLEDeviceCallbacks *cb);
   static bool onWhiteList(BLEAddress &address);
+#if CONFIG_ESP_HOSTED_ENABLE_BT_NIMBLE
+  // Set SDIO pins for connection to external ESP MCU
+  static bool setPins(int8_t clk, int8_t cmd, int8_t d0, int8_t d1, int8_t d2, int8_t d3, int8_t rst);
+#endif
 #endif
 
 private:

@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       idf_ver:
-        description: "IDF Versions"
-        default: "release-v5.3,release-v5.4,release-v5.5"
+        description: "Comma separated list of IDF branches to build"
+        default: "release-v5.5"
         type: "string"
         required: true
       idf_targets:
-        description: "IDF Targets"
-        default: "esp32,esp32s2,esp32s3,esp32c2,esp32c3,esp32c6,esp32h2,esp32p4"
+        description: "Comma separated list of IDF targets to build"
+        default: "esp32,esp32s2,esp32s3,esp32c2,esp32c3,esp32c5,esp32c6,esp32c61,esp32h2,esp32p4"
         type: "string"
         required: false
   push:
@@ -26,7 +26,6 @@ on:
       - "idf_component_examples/**"
       - "idf_component.yml"
       - "Kconfig.projbuild"
-      - "CMakeLists.txt"
       - ".github/workflows/build_component.yml"
       - ".github/scripts/check-cmakelists.sh"
       - ".github/scripts/on-push-idf.sh"
@@ -37,6 +36,7 @@ on:
       - "variants/esp32c3/**"
       - "variants/esp32c5/**"
       - "variants/esp32c6/**"
+      - "variants/esp32c61/**"
       - "variants/esp32h2/**"
       - "variants/esp32p4/**"
       - "variants/esp32s2/**"
@@ -44,6 +44,7 @@ on:
       - "!*.md"
       - "!*.txt"
       - "!*.properties"
+      - "CMakeLists.txt"
 
 permissions:
   contents: read
@@ -125,7 +126,7 @@ jobs:
                 echo "esp32,esp32s2,esp32s3,esp32c2,esp32c3,esp32c6,esp32h2,esp32p4"
                 ;;
               "release-v5.5")
-                echo "esp32,esp32s2,esp32s3,esp32c2,esp32c3,esp32c5,esp32c6,esp32h2,esp32p4"
+                echo "esp32,esp32s2,esp32s3,esp32c2,esp32c3,esp32c5,esp32c6,esp32c61,esp32h2,esp32p4"
                 ;;
               *)
                 echo ""
@@ -204,6 +205,14 @@ jobs:
       # Need to install jq in the container to be able to use it in the script
       - name: Setup jq
         uses: dcarbone/install-jq-action@e397bd87438d72198f81efd21f876461183d383a # v3.0.1
+
+      - name: Setup yq
+        run: |
+          YQ_VERSION="v4.48.1"
+          YQ_BINARY=yq_linux_amd64
+          wget -q https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/${YQ_BINARY} -O /usr/bin/yq
+          chmod +x /usr/bin/yq
+          yq --version
 
       - name: Download affected examples
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
