@@ -38,6 +38,7 @@
  * https://github.com/espressif/arduino-esp32/tree/master/libraries/SD
  */
 
+#include <Arduino.h>
 #include "FS.h"
 #include "SD.h"
 #include "SPI.h"
@@ -185,7 +186,7 @@ void testFileIO(fs::FS &fs, const char *path) {
       len -= toRead;
     }
     end = millis() - start;
-    Serial.printf("%u bytes read for %lu ms\n", flen, end);
+    Serial.printf("%zu bytes read for %lu ms\n", flen, end);
     file.close();
   } else {
     Serial.println("Failed to open file for reading");

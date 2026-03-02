@@ -727,7 +727,7 @@ void WebServer::sendContent(const char *content, size_t contentLength) {
   if (_chunked) {
     char *chunkSize = (char *)malloc(11);
     if (chunkSize) {
-      sprintf(chunkSize, "%x%s", contentLength, footer);
+      sprintf(chunkSize, "%zx%s", contentLength, footer);
       _currentClientWrite(chunkSize, strlen(chunkSize));
       free(chunkSize);
     }
@@ -750,7 +750,7 @@ void WebServer::sendContent_P(PGM_P content, size_t size) {
   if (_chunked) {
     char *chunkSize = (char *)malloc(11);
     if (chunkSize) {
-      sprintf(chunkSize, "%x%s", size, footer);
+      sprintf(chunkSize, "%zx%s", size, footer);
       _currentClientWrite(chunkSize, strlen(chunkSize));
       free(chunkSize);
     }
@@ -772,6 +772,7 @@ void WebServer::_streamFileCore(const size_t fileSize, const String &fileName, c
     sendHeader(F("Content-Encoding"), F("gzip"));
   }
   send(code, contentType, "");
+  setContentLength(CONTENT_LENGTH_NOT_SET);
 }
 
 String WebServer::pathArg(unsigned int i) const {
