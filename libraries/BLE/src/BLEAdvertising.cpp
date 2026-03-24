@@ -1,4 +1,23 @@
 /*
+ * Copyright 2017-2026 Espressif Systems (Shanghai) PTE LTD
+ * Copyright 2020-2025 Ryan Powell <ryan@nable-embedded.io> and
+ * esp-nimble-cpp, NimBLE-Arduino contributors.
+ * Copyright 2017 Neil Kolban
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
  * BLEAdvertising.cpp
  *
  * This class encapsulates advertising a BLE Server.
@@ -655,6 +674,7 @@ void BLEAdvertising::reset() {
   m_advDataSet = false;              // Force advertising data reconfiguration
   m_advConfiguring = false;          // Not currently configuring
   m_nameInScanResp = false;          // Name placement decided fresh on each start()
+  m_advertisingPending = false;      // No pending advertising start
 }  // BLEAdvertising
 
 void BLEAdvertising::freeServiceUUIDs() {
@@ -975,8 +995,10 @@ bool BLEAdvertising::start() {
   }
 
   // Advertising data is already configured, just start advertising.
+  m_advertisingPending = true;
   esp_err_t errRc = ::esp_ble_gap_start_advertising(&m_advParams);
   if (errRc != ESP_OK) {
+    m_advertisingPending = false;
     log_e("<< esp_ble_gap_start_advertising: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
   } else {
     log_v("<< start");
@@ -991,6 +1013,7 @@ bool BLEAdvertising::start() {
  */
 bool BLEAdvertising::stop() {
   log_v(">> stop");
+  m_advertisingPending = false;  // Cancel any pending advertising restart
   esp_err_t errRc = ::esp_ble_gap_stop_advertising();
   if (errRc != ESP_OK) {
     log_e("esp_ble_gap_stop_advertising: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
@@ -1025,8 +1048,10 @@ void BLEAdvertising::handleGAPEvent(esp_gap_ble_cb_event_t event, esp_ble_gap_cb
         m_advDataSet = true;
         m_advConfiguring = false;
         freeServiceUUIDs();
+        m_advertisingPending = true;
         esp_err_t errRc = ::esp_ble_gap_start_advertising(&m_advParams);
         if (errRc != ESP_OK) {
+          m_advertisingPending = false;
           log_e("esp_ble_gap_start_advertising: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
         }
       }
@@ -1047,8 +1072,10 @@ void BLEAdvertising::handleGAPEvent(esp_gap_ble_cb_event_t event, esp_ble_gap_cb
       m_advDataSet = true;
       m_advConfiguring = false;
       freeServiceUUIDs();
+      m_advertisingPending = true;
       esp_err_t errRc = ::esp_ble_gap_start_advertising(&m_advParams);
       if (errRc != ESP_OK) {
+        m_advertisingPending = false;
         log_e("esp_ble_gap_start_advertising: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
       }
       break;
@@ -1072,8 +1099,10 @@ void BLEAdvertising::handleGAPEvent(esp_gap_ble_cb_event_t event, esp_ble_gap_cb
       } else {
         m_advDataSet = true;
         m_advConfiguring = false;
+        m_advertisingPending = true;
         esp_err_t errRc = ::esp_ble_gap_start_advertising(&m_advParams);
         if (errRc != ESP_OK) {
+          m_advertisingPending = false;
           log_e("esp_ble_gap_start_advertising: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
         }
       }
@@ -1091,8 +1120,10 @@ void BLEAdvertising::handleGAPEvent(esp_gap_ble_cb_event_t event, esp_ble_gap_cb
 
       m_advDataSet = true;
       m_advConfiguring = false;
+      m_advertisingPending = true;
       esp_err_t errRc = ::esp_ble_gap_start_advertising(&m_advParams);
       if (errRc != ESP_OK) {
+        m_advertisingPending = false;
         log_e("esp_ble_gap_start_advertising: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
       }
       break;
@@ -1101,11 +1132,33 @@ void BLEAdvertising::handleGAPEvent(esp_gap_ble_cb_event_t event, esp_ble_gap_cb
     case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
     {
       log_d("Advertising start complete, status=%d", param->adv_start_cmpl.status);
+      if (param->adv_start_cmpl.status == ESP_BT_STATUS_SUCCESS) {
+        m_advertisingPending = false;
+      } else if (m_advertisingPending) {
+        // Start failed but advertising was still desired — retry once.
+        // Clear the flag first to prevent infinite retries if the retry also fails.
+        m_advertisingPending = false;
+        log_w("Advertising start failed (status=%d), retrying", param->adv_start_cmpl.status);
+        esp_err_t errRc = ::esp_ble_gap_start_advertising(&m_advParams);
+        if (errRc != ESP_OK) {
+          log_e("esp_ble_gap_start_advertising retry: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
+        }
+      }
       break;
     }
     case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
     {
       log_i("STOP advertising");
+      m_advConfiguring = false;  // Clear configuring flag so start() can be called again
+      // If a start was requested but advertising was stopped (e.g., due to a connection) before
+      // the start complete event fired, re-issue start_advertising to honor the request.
+      if (m_advertisingPending) {
+        esp_err_t errRc = ::esp_ble_gap_start_advertising(&m_advParams);
+        if (errRc != ESP_OK) {
+          m_advertisingPending = false;
+          log_e("esp_ble_gap_start_advertising (restart): rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
+        }
+      }
       break;
     }
     default: break;
