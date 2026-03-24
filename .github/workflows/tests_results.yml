@@ -266,6 +266,7 @@ jobs:
               job.status == 'failure'
             }}
         run: |
+          mkdir -p ./runtime-test-results
           rm -rf $REPORT_FILE
           mv -f ./unity_results.json ./runtime-test-results/unity_results.json
           touch $REPORT_FILE
