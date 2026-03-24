@@ -273,7 +273,8 @@ jobs:
           python3 ./runtime-test-results/runtime_table_generator.py --results ./runtime-test-results/unity_results.json --sha $ORIGINAL_SHA --perf-dir ./artifacts >> $REPORT_FILE
           mv -f ./test_results.json ./runtime-test-results/test_results.json
           rm -rf artifacts
-
+      - name: Ensure Directory Exists
+        run: mkdir -p runtime-test-results
       - name: Generate badge
         if: |
           (!cancelled() &&
