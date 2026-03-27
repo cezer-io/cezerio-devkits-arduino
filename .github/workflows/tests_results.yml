@@ -234,7 +234,7 @@ jobs:
             })).data;
             core.info(`${name} is ${state}`);
 
-        - name: Generate report
+      - name: Generate report
         if: |
           (!cancelled() &&
            needs.get-artifacts.outputs.original_conclusion != 'cancelled' &&
