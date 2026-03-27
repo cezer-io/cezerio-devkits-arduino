@@ -113,7 +113,8 @@ jobs:
       pull-requests: write
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
         with:
           ref: gh-pages
           fetch-depth: 0
@@ -233,7 +234,7 @@ jobs:
             })).data;
             core.info(`${name} is ${state}`);
 
-        - name: Generate report
+      - name: Generate report
         if: |
           (!cancelled() &&
            needs.get-artifacts.outputs.original_conclusion != 'cancelled' &&
