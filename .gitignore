@@ -47,7 +47,7 @@ debug.cfg
 debug.svd
 debug_custom.json
 libraries/Insights/examples/*/*.ino.zip
-test_results.json
+!test_results.json
 
 # Vale Style
 .vale/styles/*
