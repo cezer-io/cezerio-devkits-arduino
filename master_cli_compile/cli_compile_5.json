@@ -140,7 +140,7 @@
                     },
 {"name": "libraries/ESPmDNS/examples/mDNS_Web_Server",
                     "sizes": [{
-                            "flash_bytes": 950232,
+                            "flash_bytes": 950216,
                             "flash_percentage": 72,
                             "ram_bytes": 49080,
                             "ram_percentage": 14

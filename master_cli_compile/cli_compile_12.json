@@ -4,7 +4,7 @@
                 "sketches": [
 {"name": "libraries/WebServer/examples/WebUpdate",
                     "sizes": [{
-                            "flash_bytes": 991148,
+                            "flash_bytes": 991164,
                             "flash_percentage": 75,
                             "ram_bytes": 49680,
                             "ram_percentage": 15
@@ -898,7 +898,7 @@
                     },
 {"name": "libraries/WiFi/examples/SimpleWiFiServer",
                     "sizes": [{
-                            "flash_bytes": 857508,
+                            "flash_bytes": 857516,
                             "flash_percentage": 65,
                             "ram_bytes": 41788,
                             "ram_percentage": 12
@@ -946,7 +946,7 @@
                     },
 {"name": "libraries/WiFi/examples/WiFiClientEnterprise",
                     "sizes": [{
-                            "flash_bytes": 932523,
+                            "flash_bytes": 932515,
                             "flash_percentage": 71,
                             "ram_bytes": 42180,
                             "ram_percentage": 12
